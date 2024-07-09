@@ -17,15 +17,15 @@ import threading
 from netmiko import ConnectHandler
 
 
-INFO_PATH = os.path.join(os.getcwd(), 'Sino-Bridge.xlsx') 
+DEV_PATH = os.path.join(os.getcwd(), 'Sino-Bridge.xlsx') 
 LOCAL_TIME = time.strftime('%Y.%m.%d', time.localtime())
 LOCK = threading.Lock()
 POOL = threading.BoundedSemaphore(100)
 
 
-def get_devices_info(info_file):
+def get_devices_dev(dev_file):
     try:
-        devices_dataframe = pandas.read_excel(info_file, sheet_name=0, dtype=str, keep_default_na=False)
+        devices_dataframe = pandas.read_excel(dev_file, sheet_name=0, dtype=str, keep_default_na=False)
     except FileNotFoundError:
         print(f'\n没有找到表格文件！\n')
         input('Press Enter to exit.') 
@@ -35,9 +35,9 @@ def get_devices_info(info_file):
         return devices_dict
 
 
-def get_cmds_info(info_file):
+def get_cmds_dev(dev_file):
     try:
-        cmds_dataframe = pandas.read_excel(info_file, sheet_name=1, dtype=str)
+        cmds_dataframe = pandas.read_excel(dev_file, sheet_name=1, dtype=str)
     except ValueError: 
         print(f'\n表格文件缺失子表格信息！\n') 
         input('Press Enter to exit.')
@@ -47,60 +47,60 @@ def get_cmds_info(info_file):
         return cmds_dict
 
 
-def inspection(login_info, cmds_dict):
+def inspection(login_dev, cmds_dict):
     t11 = time.time()
     ssh = None
 
     try: 
-        ssh = ConnectHandler(**login_info) 
+        ssh = ConnectHandler(**login_dev) 
         ssh.enable() 
     except Exception as ssh_error:
         with LOCK: 
             match type(ssh_error).__name__: 
                 case 'AttributeError': 
-                    print(f'设备 {login_info["host"]} 缺少设备管理地址！') 
+                    print(f'设备 {login_dev["host"]} 缺少设备管理地址！') 
                     with open(os.path.join(os.getcwd(), LOCAL_TIME, 'err-log.log'), 'a', encoding='utf-8') as log:
-                        log.write(f'设备 {login_info["host"]} 缺少设备管理地址！\n') 
+                        log.write(f'设备 {login_dev["host"]} 缺少设备管理地址！\n') 
                 case 'NetmikoTimeoutException':
-                    print(f'设备 {login_info["host"]} 管理地址或端口不可达！')
+                    print(f'设备 {login_dev["host"]} 管理地址或端口不可达！')
                     with open(os.path.join(os.getcwd(), LOCAL_TIME, 'err-log.log'), 'a', encoding='utf-8') as log:
-                        log.write(f'设备 {login_info["host"]} 管理地址或端口不可达！\n')
+                        log.write(f'设备 {login_dev["host"]} 管理地址或端口不可达！\n')
                 case 'NetmikoAuthenticationException':
-                    print(f'设备 {login_info["host"]} 用户名或密码认证失败！')
+                    print(f'设备 {login_dev["host"]} 用户名或密码认证失败！')
                     with open(os.path.join(os.getcwd(), LOCAL_TIME, 'err-log.log'), 'a', encoding='utf-8') as log:
-                        log.write(f'设备 {login_info["host"]} 用户名或密码认证失败！\n')
+                        log.write(f'设备 {login_dev["host"]} 用户名或密码认证失败！\n')
                 case 'ValueError':
-                    print(f'设备 {login_info["host"]} Enable密码认证失败！')
+                    print(f'设备 {login_dev["host"]} Enable密码认证失败！')
                     with open(os.path.join(os.getcwd(), LOCAL_TIME, 'err-log.log'), 'a', encoding='utf-8') as log:
-                        log.write(f'设备 {login_info["host"]} Enable密码认证失败！\n')
+                        log.write(f'设备 {login_dev["host"]} Enable密码认证失败！\n')
                 case 'TimeoutError':
-                    print(f'设备 {login_info["host"]} Telnet连接超时！')
+                    print(f'设备 {login_dev["host"]} Telnet连接超时！')
                     with open(os.path.join(os.getcwd(), LOCAL_TIME, 'err-log.log'), 'a', encoding='utf-8') as log:
-                        log.write(f'设备 {login_info["host"]} Telnet连接超时！\n')
+                        log.write(f'设备 {login_dev["host"]} Telnet连接超时！\n')
                 case 'ReadTimeout':
-                    print(f'设备 {login_info["host"]} Enable密码认证失败！')
+                    print(f'设备 {login_dev["host"]} Enable密码认证失败！')
                     with open(os.path.join(os.getcwd(), LOCAL_TIME, 'err-log.log'), 'a', encoding='utf-8') as log:
-                        log.write(f'设备 {login_info["host"]} Enable密码认证失败！\n')
+                        log.write(f'设备 {login_dev["host"]} Enable密码认证失败！\n')
                 case 'ConnectionRefusedError':
-                    print(f'设备 {login_info["host"]} 远程登录协议错误！')
+                    print(f'设备 {login_dev["host"]} 远程登录协议错误！')
                     with open(os.path.join(os.getcwd(), LOCAL_TIME, 'err-log.log'), 'a', encoding='utf-8') as log:
-                        log.write(f'设备 {login_info["host"]} 远程登录协议错误！\n')
+                        log.write(f'设备 {login_dev["host"]} 远程登录协议错误！\n')
                 case _:
-                    print(f'设备 {login_info["host"]} 未知错误！{type(ssh_error).__name__}')
+                    print(f'设备 {login_dev["host"]} 未知错误！{type(ssh_error).__name__}')
                     with open(os.path.join(os.getcwd(), LOCAL_TIME, 'err-log.log'), 'a', encoding='utf-8') as log:
-                        log.write(f'设备 {login_info["host"]} 未知错误！{type(ssh_error).__name__}\n')
+                        log.write(f'设备 {login_dev["host"]} 未知错误！{type(ssh_error).__name__}\n')
     else: 
-        with open(os.path.join(os.getcwd(), LOCAL_TIME, login_info['host'] + '.log'), 'w', encoding='utf-8') as device_log_file:
+        with open(os.path.join(os.getcwd(), LOCAL_TIME, login_dev['host'] + '.log'), 'w', encoding='utf-8') as device_log_file:
             with LOCK: 
-                print(f'设备 {login_info["host"]} 正在采集...')
-            for cmd in cmds_dict[login_info['device_type']]:
+                print(f'设备 {login_dev["host"]} 正在采集...')
+            for cmd in cmds_dict[login_dev['device_type']]:
                 if type(cmd) is str:
                     device_log_file.write('=' * 10 + ' ' + cmd + ' ' + '=' * 10 + '\n\n')
                     show = ssh.send_command(cmd, read_timeout=30)
                     device_log_file.write(show + '\n\n')
         t12 = time.time()
         with LOCK:
-            print(f'设备 {login_info["host"]} 采集完成，用时 {round(t12 - t11, 1)} 秒。')
+            print(f'设备 {login_dev["host"]} 采集完成，用时 {round(t12 - t11, 1)} 秒。')
     finally: 
         if ssh is not None:
             ssh.disconnect()
@@ -110,8 +110,8 @@ def inspection(login_info, cmds_dict):
 if __name__ == '__main__':
     t1 = time.time() 
     threading_list = []
-    devices_info = get_devices_info(INFO_PATH)
-    cmds_info = get_cmds_info(INFO_PATH)
+    devices_dev = get_devices_dev(DEV_PATH)
+    cmds_dev = get_cmds_dev(DEV_PATH)
 
     print(f'\n北京神州新桥科技有限公司')
     print(f'\n北京神州新桥科技有限公司西安分公司')
@@ -126,8 +126,8 @@ if __name__ == '__main__':
         except FileNotFoundError:
             pass
 
-    for device_info in devices_info:
-        pre_device = threading.Thread(target=inspection, args=(device_info, cmds_info))
+    for device_dev in devices_dev:
+        pre_device = threading.Thread(target=inspection, args=(device_dev, cmds_dev))
         threading_list.append(pre_device)
         POOL.acquire()
         pre_device.start() 
