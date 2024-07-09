@@ -114,6 +114,7 @@ if __name__ == '__main__':
     cmds_info = get_cmds_info(INFO_PATH)
 
     print(f'\n北京神州新桥科技有限公司')
+    print(f'\n北京神州新桥科技有限公司西安分公司')
     print(f'\n正在采集信息...')
     print(f'\n' + '-' * 40 + '\n')
 
